@@ -1,0 +1,8 @@
+# Créer le fichier requirements.txt
+echo flask==2.3.3 > requirements.txt
+echo flask-cors==4.0.0 >> requirements.txt
+echo mysql-connector-python==8.1.0 >> requirements.txt
+echo tensorflow==2.13.0 >> requirements.txt
+echo pillow==10.0.1 >> requirements.txt
+echo numpy==1.24.3 >> requirements.txt
+echo protobuf==3.20.3 >> requirements.txt
