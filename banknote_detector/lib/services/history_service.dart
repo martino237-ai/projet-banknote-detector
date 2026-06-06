@@ -20,22 +20,40 @@ class HistoryService extends ChangeNotifier {
       
       if (historyJson != null) {
         final List<dynamic> decoded = json.decode(historyJson);
-        // Note: Il faudra peut-être adapter DetectionResult pour inclure un mécanisme de sérialisation JSON inverse
-        // Mais pour l'instant, on gère la liste en mémoire
+        _history = decoded
+            .cast<Map<String, dynamic>>()
+            .map(DetectionResult.fromJson)
+            .toList();
+        notifyListeners();
       }
     } catch (e) {
       debugPrint('Erreur lors du chargement de l\'historique: $e');
     }
   }
 
+  Future<void> _saveHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String historyJson = json.encode(_history.map((r) => r.toJson()).toList());
+      await prefs.setString(_storageKey, historyJson);
+    } catch (e) {
+      debugPrint('Erreur lors de la sauvegarde de l\'historique: $e');
+    }
+  }
+
+  Future<void> refreshHistory() async {
+    await _loadHistory();
+  }
+
   Future<void> addResult(DetectionResult result) async {
     _history.insert(0, result); // Ajouter au début
     notifyListeners();
-    // TODO: Persister dans SharedPreferences
+    await _saveHistory();
   }
 
-  void clearHistory() {
+  Future<void> clearHistory() async {
     _history.clear();
     notifyListeners();
+    await _saveHistory();
   }
 }

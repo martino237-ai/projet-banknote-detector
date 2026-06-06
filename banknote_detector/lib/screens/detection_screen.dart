@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
+import '../services/history_service.dart';
 import '../models/detection_result.dart';
 
 class DetectionScreen extends StatefulWidget {
@@ -37,6 +38,9 @@ class _DetectionScreenState extends State<DetectionScreen> {
         
         final apiService = Provider.of<ApiService>(context, listen: false);
         final result = await apiService.detectImage(image);
+        if (result != null) {
+          Provider.of<HistoryService>(context, listen: false).addResult(result);
+        }
         
         if (mounted) {
           setState(() {
@@ -49,7 +53,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
       if (mounted) {
         setState(() => _isProcessing = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.redAccent),
+          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.red),
         );
       }
     }
@@ -58,11 +62,9 @@ class _DetectionScreenState extends State<DetectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF07101F),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text('Analyse IA'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -89,11 +91,11 @@ class _DetectionScreenState extends State<DetectionScreen> {
     return Container(
       height: 350,
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.28),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
@@ -114,27 +116,24 @@ class _DetectionScreenState extends State<DetectionScreen> {
                     child: GestureDetector(
                       onTap: () => setState(() => _selectedImage = null),
                       child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(color: Colors.black.withOpacity(0.44), shape: BoxShape.circle),
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(color: Colors.black26, shape: BoxShape.circle),
                         child: const Icon(Icons.close, color: Colors.white, size: 20),
                       ),
                     ),
                   ),
                 ],
               )
-            : Container(
-                color: const Color(0xFF0F172A),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.camera_enhance_outlined, size: 66, color: Colors.white.withOpacity(0.22)),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Aucune image sélectionnée',
-                      style: TextStyle(color: Colors.white.withOpacity(0.72), fontWeight: FontWeight.w500),
-                    ),
-                  ],
-                ),
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.camera_enhance_outlined, size: 64, color: Colors.blue.withOpacity(0.2)),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Aucune image sélectionnée',
+                    style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.w500),
+                  ),
+                ],
               ),
       ),
     );
@@ -146,13 +145,13 @@ class _DetectionScreenState extends State<DetectionScreen> {
         const Text(
           'Prêt pour l\'authentification',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
         ),
         const SizedBox(height: 8),
         Text(
           'Prenez une photo nette du billet pour que notre IA puisse l\'analyser précisément.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.white.withOpacity(0.68), fontSize: 14),
+          style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
         ),
       ],
     );
@@ -161,11 +160,11 @@ class _DetectionScreenState extends State<DetectionScreen> {
   Widget _buildLoadingState() {
     return Column(
       children: [
-        const CircularProgressIndicator(strokeWidth: 3, color: Color(0xFF4F46E5)),
+        const CircularProgressIndicator(strokeWidth: 3),
         const SizedBox(height: 20),
-        const Text(
+        Text(
           'Traitement par le réseau neuronal...',
-          style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold),
+          style: TextStyle(color: Colors.blue.shade700, fontWeight: FontWeight.bold),
         ),
       ],
     );
@@ -173,27 +172,24 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
   Widget _buildResultSection(DetectionResult result) {
     final bool isAuthentic = result.isAuthentic;
-    final themeColor = isAuthentic ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
+    final themeColor = isAuthentic ? const Color(0xFF10B981) : const Color(0xFFEF4444);
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: themeColor.withOpacity(0.18), width: 1.5),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 20, offset: const Offset(0, 10)),
-        ],
+        border: Border.all(color: themeColor.withOpacity(0.2), width: 2),
       ),
       child: Column(
         children: [
-          Icon(isAuthentic ? Icons.check_circle_rounded : Icons.warning_rounded, color: themeColor, size: 52),
+          Icon(isAuthentic ? Icons.check_circle_rounded : Icons.warning_rounded, color: themeColor, size: 48),
           const SizedBox(height: 16),
           Text(
             isAuthentic ? 'BILLET AUTHENTIQUE' : 'BILLET SUSPECT',
             style: TextStyle(color: themeColor, fontWeight: FontWeight.w900, fontSize: 20),
           ),
-          const Divider(height: 32, color: Colors.white12),
+          const Divider(height: 32),
           _buildResultRow('Valeur', '${result.currency} ${result.denomination}'),
           _buildResultRow('Confiance', '${(result.confidence * 100).toStringAsFixed(1)}%'),
           const SizedBox(height: 16),
@@ -202,7 +198,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
             child: LinearProgressIndicator(
               value: result.confidence,
               minHeight: 8,
-              backgroundColor: themeColor.withOpacity(0.18),
+              backgroundColor: themeColor.withOpacity(0.1),
               valueColor: AlwaysStoppedAnimation(themeColor),
             ),
           ),
@@ -213,12 +209,12 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
   Widget _buildResultRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.68), fontWeight: FontWeight.w500)),
-          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+          Text(label, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         ],
       ),
     );
@@ -252,14 +248,13 @@ class _DetectionScreenState extends State<DetectionScreen> {
     return ElevatedButton.icon(
       onPressed: onPressed,
       icon: Icon(icon, size: 20),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+      label: Text(label),
       style: ElevatedButton.styleFrom(
-        backgroundColor: isPrimary ? const Color(0xFF4F46E5) : const Color(0xFF14243C),
-        foregroundColor: Colors.white,
+        backgroundColor: isPrimary ? const Color(0xFF2563EB) : Colors.white,
+        foregroundColor: isPrimary ? Colors.white : const Color(0xFF0F172A),
+        side: isPrimary ? BorderSide.none : const BorderSide(color: Color(0xFFE2E8F0)),
         padding: const EdgeInsets.symmetric(vertical: 18),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       ),
     );
   }
 }
-

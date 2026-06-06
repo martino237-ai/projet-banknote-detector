@@ -36,4 +36,17 @@ class DetectionResult {
       ),
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'detection_id': detectionId,
+      'is_authentic': isAuthentic,
+      'confidence': confidence,
+      'currency': currency,
+      'denomination': denomination,
+      'denomination_confidence': denominationConfidence,
+      'processing_time_ms': processingTimeMs,
+      'timestamp': timestamp.toIso8601String(),
+    };
+  }
 }
