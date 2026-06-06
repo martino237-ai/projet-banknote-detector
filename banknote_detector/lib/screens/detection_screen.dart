@@ -23,9 +23,9 @@ class _DetectionScreenState extends State<DetectionScreen> {
     try {
       final XFile? image = await _picker.pickImage(
         source: source,
-        maxWidth: 1080,
-        maxHeight: 1080,
-        imageQuality: 85,
+        maxWidth: 1200,
+        maxHeight: 1200,
+        imageQuality: 90,
       );
       
       if (image != null) {
@@ -43,73 +43,41 @@ class _DetectionScreenState extends State<DetectionScreen> {
             _result = result;
             _isProcessing = false;
           });
-          
-          if (result == null && apiService.error != null) {
-            _showErrorDialog(apiService.error!);
-          }
         }
       }
     } catch (e) {
       if (mounted) {
-        setState(() {
-          _isProcessing = false;
-        });
-        _showErrorDialog('Erreur: $e');
+        setState(() => _isProcessing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur : $e'), backgroundColor: Colors.redAccent),
+        );
       }
     }
-  }
-
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Row(
-          children: [
-            Icon(Icons.error_outline, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Erreur de connexion'),
-          ],
-        ),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey.shade50,
+      backgroundColor: const Color(0xFF07101F),
       appBar: AppBar(
-        title: const Text('IA - Détecteur de Billets', 
-          style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
+        title: const Text('Analyse IA'),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        foregroundColor: Colors.blue.shade900,
       ),
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Padding(
-          padding: const EdgeInsets.all(20.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _buildImagePreview(),
+              _buildImageCard(),
+              const SizedBox(height: 32),
+              if (!_isProcessing && _result == null) _buildInstructionText(),
+              if (_isProcessing) _buildLoadingState(),
+              if (_result != null) _buildResultSection(_result!),
               const SizedBox(height: 32),
               _buildActionButtons(),
-              const SizedBox(height: 32),
-              if (_isProcessing)
-                _buildLoadingState()
-              else if (_result != null)
-                _buildResultCard(_result!)
-              else
-                _buildInitialState(),
             ],
           ),
         ),
@@ -117,23 +85,22 @@ class _DetectionScreenState extends State<DetectionScreen> {
     );
   }
 
-  Widget _buildImagePreview() {
+  Widget _buildImageCard() {
     return Container(
-      height: 300,
+      height: 350,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.shade900.withOpacity(0.08),
+            color: Colors.black.withOpacity(0.28),
             blurRadius: 30,
             offset: const Offset(0, 15),
           ),
         ],
-        border: Border.all(color: Colors.white, width: 2),
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
+        borderRadius: BorderRadius.circular(32),
         child: _selectedImage != null
             ? Stack(
                 fit: StackFit.expand,
@@ -141,35 +108,30 @@ class _DetectionScreenState extends State<DetectionScreen> {
                   kIsWeb 
                     ? Image.network(_selectedImage!.path, fit: BoxFit.cover)
                     : Image.file(File(_selectedImage!.path), fit: BoxFit.cover),
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Colors.black.withOpacity(0.4), Colors.transparent],
-                      ),
-                    ),
-                  ),
                   Positioned(
-                    top: 15,
-                    right: 15,
-                    child: IconButton(
-                      onPressed: () => setState(() => _selectedImage = null),
-                      icon: const Icon(Icons.close, color: Colors.white),
-                      style: IconButton.styleFrom(backgroundColor: Colors.black26),
+                    top: 20,
+                    right: 20,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedImage = null),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(color: Colors.black.withOpacity(0.44), shape: BoxShape.circle),
+                        child: const Icon(Icons.close, color: Colors.white, size: 20),
+                      ),
                     ),
                   ),
                 ],
               )
-            : Center(
+            : Container(
+                color: const Color(0xFF0F172A),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.camera_alt_outlined, size: 70, color: Colors.blue.shade100),
-                    const SizedBox(height: 16),
+                    Icon(Icons.camera_enhance_outlined, size: 66, color: Colors.white.withOpacity(0.22)),
+                    const SizedBox(height: 18),
                     Text(
-                      'Prêt pour l\'analyse',
-                      style: TextStyle(color: Colors.blue.shade300, fontWeight: FontWeight.bold),
+                      'Aucune image sélectionnée',
+                      style: TextStyle(color: Colors.white.withOpacity(0.72), fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -178,166 +140,126 @@ class _DetectionScreenState extends State<DetectionScreen> {
     );
   }
 
-  Widget _buildActionButtons() {
-    return Row(
+  Widget _buildInstructionText() {
+    return Column(
       children: [
-        Expanded(
-          child: _buildButton(
-            onPressed: _isProcessing ? null : () => _pickImage(ImageSource.camera),
-            icon: Icons.camera_rounded,
-            label: 'CAMÉRA',
-            primary: true,
-          ),
+        const Text(
+          'Prêt pour l\'authentification',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: _buildButton(
-            onPressed: _isProcessing ? null : () => _pickImage(ImageSource.gallery),
-            icon: Icons.photo_library_rounded,
-            label: 'GALERIE',
-            primary: false,
-          ),
+        const SizedBox(height: 8),
+        Text(
+          'Prenez une photo nette du billet pour que notre IA puisse l\'analyser précisément.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: Colors.white.withOpacity(0.68), fontSize: 14),
         ),
       ],
-    );
-  }
-
-  Widget _buildButton({required VoidCallback? onPressed, required IconData icon, required String label, required bool primary}) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 22),
-      label: Text(label, style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: primary ? Colors.blue.shade700 : Colors.white,
-        foregroundColor: primary ? Colors.white : Colors.blue.shade700,
-        padding: const EdgeInsets.symmetric(vertical: 18),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(18),
-          side: primary ? BorderSide.none : BorderSide(color: Colors.blue.shade100, width: 2),
-        ),
-        elevation: primary ? 4 : 0,
-      ),
-    );
-  }
-
-  Widget _buildInitialState() {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade50.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: Colors.blue.shade100),
-      ),
-      child: Column(
-        children: [
-          Icon(Icons.auto_awesome, color: Colors.blue.shade400),
-          const SizedBox(height: 12),
-          Text(
-            'Scannez un billet pour vérifier son authenticité et sa valeur instantanément.',
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.blue.shade900, fontSize: 14, height: 1.5),
-          ),
-        ],
-      ),
     );
   }
 
   Widget _buildLoadingState() {
     return Column(
       children: [
+        const CircularProgressIndicator(strokeWidth: 3, color: Color(0xFF4F46E5)),
         const SizedBox(height: 20),
-        const CircularProgressIndicator(strokeWidth: 4),
-        const SizedBox(height: 24),
         const Text(
-          'ANALYSE IA EN COURS...',
-          style: TextStyle(fontWeight: FontWeight.w900, color: Colors.blue, letterSpacing: 1.5),
+          'Traitement par le réseau neuronal...',
+          style: TextStyle(color: Color(0xFF4F46E5), fontWeight: FontWeight.bold),
         ),
       ],
     );
   }
 
-  Widget _buildResultCard(DetectionResult result) {
+  Widget _buildResultSection(DetectionResult result) {
     final bool isAuthentic = result.isAuthentic;
-    final color = isAuthentic ? Colors.green.shade700 : Colors.red.shade700;
+    final themeColor = isAuthentic ? const Color(0xFF22C55E) : const Color(0xFFEF4444);
 
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
+        color: const Color(0xFF0F172A),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: themeColor.withOpacity(0.18), width: 1.5),
         boxShadow: [
-          BoxShadow(color: color.withOpacity(0.1), blurRadius: 40, offset: const Offset(0, 10)),
+          BoxShadow(color: Colors.black.withOpacity(0.18), blurRadius: 20, offset: const Offset(0, 10)),
         ],
-        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(100),
-            ),
-            child: Text(
-              isAuthentic ? '✓ AUTHENTIQUE' : '⚠ SUSPECT / FAUX',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 14),
+          Icon(isAuthentic ? Icons.check_circle_rounded : Icons.warning_rounded, color: themeColor, size: 52),
+          const SizedBox(height: 16),
+          Text(
+            isAuthentic ? 'BILLET AUTHENTIQUE' : 'BILLET SUSPECT',
+            style: TextStyle(color: themeColor, fontWeight: FontWeight.w900, fontSize: 20),
+          ),
+          const Divider(height: 32, color: Colors.white12),
+          _buildResultRow('Valeur', '${result.currency} ${result.denomination}'),
+          _buildResultRow('Confiance', '${(result.confidence * 100).toStringAsFixed(1)}%'),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: result.confidence,
+              minHeight: 8,
+              backgroundColor: themeColor.withOpacity(0.18),
+              valueColor: AlwaysStoppedAnimation(themeColor),
             ),
           ),
-          const SizedBox(height: 30),
-          if (isAuthentic) ...[
-            const Text('DÉNOMINATION', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12, letterSpacing: 2)),
-            Text(
-              '${result.currency} ${result.denomination}',
-              style: TextStyle(color: color, fontSize: 56, fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 20),
-            _buildBar('Confiance Denom.', result.denominationConfidence ?? 0, color),
-          ],
-          const SizedBox(height: 16),
-          _buildBar('Confiance Authentification', result.confidence, Colors.blue.shade700),
-          const Divider(height: 40),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _infoTile(Icons.timer_rounded, '${result.processingTimeMs.toStringAsFixed(0)}ms'),
-              _infoTile(Icons.calendar_today_rounded, '${result.timestamp.day}/${result.timestamp.month}'),
-            ],
-          )
         ],
       ),
     );
   }
 
-  Widget _buildBar(String label, double val, Color c) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildResultRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.68), fontWeight: FontWeight.w500)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 11)),
-            Text('${(val * 100).toStringAsFixed(1)}%', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: c)),
-          ],
+        Expanded(
+          child: _customButton(
+            onPressed: () => _pickImage(ImageSource.camera),
+            icon: Icons.camera_alt_rounded,
+            label: 'Caméra',
+            isPrimary: true,
+          ),
         ),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(
-          value: val,
-          backgroundColor: c.withOpacity(0.1),
-          valueColor: AlwaysStoppedAnimation(c),
-          minHeight: 10,
-          borderRadius: BorderRadius.circular(10),
+        const SizedBox(width: 16),
+        Expanded(
+          child: _customButton(
+            onPressed: () => _pickImage(ImageSource.gallery),
+            icon: Icons.photo_library_rounded,
+            label: 'Galerie',
+            isPrimary: false,
+          ),
         ),
       ],
     );
   }
 
-  Widget _infoTile(IconData i, String v) {
-    return Row(
-      children: [
-        Icon(i, size: 16, color: Colors.grey),
-        const SizedBox(width: 6),
-        Text(v, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 13)),
-      ],
+  Widget _customButton({required VoidCallback onPressed, required IconData icon, required String label, required bool isPrimary}) {
+    return ElevatedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 20),
+      label: Text(label, style: const TextStyle(fontWeight: FontWeight.bold)),
+      style: ElevatedButton.styleFrom(
+        backgroundColor: isPrimary ? const Color(0xFF4F46E5) : const Color(0xFF14243C),
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
     );
   }
 }
+

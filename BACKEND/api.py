@@ -1,7 +1,14 @@
 import os
+import sys
 import uuid
 import json
+import logging
+import io
+import time
+import pickle
 from datetime import datetime
+from contextlib import contextmanager
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import mysql.connector
@@ -9,9 +16,18 @@ from mysql.connector import Error, pooling
 import tensorflow as tf
 import numpy as np
 from PIL import Image
-import io
-import time
-import pickle
+
+# Configuration du logging professionnel
+file_handler = logging.FileHandler("backend.log", encoding='utf-8')
+stream_handler = logging.StreamHandler(
+    io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[file_handler, stream_handler]
+)
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
@@ -20,7 +36,11 @@ CORS(app)
 UPLOAD_FOLDER = 'uploads'
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'webp'}
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 10 * 1024 * 1024
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# Créer les dossiers nécessaires
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs('models', exist_ok=True)
 
 # Configuration MySQL
 DB_CONFIG = {
@@ -35,11 +55,13 @@ DB_CONFIG = {
 try:
     db_pool = pooling.MySQLConnectionPool(
         pool_name="banknote_pool",
-        pool_size=5,
+        pool_size=10,
+        pool_reset_session=True,
         **DB_CONFIG
     )
+    logger.info("✅ Pool de connexion MySQL initialisé")
 except Error as e:
-    print(f"Erreur Pool DB: {e}")
+    logger.error(f"❌ Erreur critique lors de l'initialisation du Pool DB: {e}")
     db_pool = None
 
 MODEL = None
@@ -48,126 +70,191 @@ LABELS = {0: '10', 1: '20', 2: '50', 3: '100', 4: '200', 5: '500', 6: '1000', 7:
 def load_model():
     global MODEL, LABELS
     try:
-        MODEL = tf.keras.models.load_model('models/best_banknote_model.h5')
-        print("✅ Modèle chargé")
+        model_path = 'models/best_banknote_model.h5'
+        if os.path.exists(model_path):
+            MODEL = tf.keras.models.load_model(model_path)
+            logger.info("✅ Modèle TensorFlow chargé avec succès")
+        else:
+            logger.warning(f"⚠️ Fichier modèle non trouvé à {model_path}")
     except Exception as e:
-        print(f"❌ Erreur modèle: {e}")
+        logger.error(f"❌ Erreur fatale lors du chargement du modèle: {e}")
     
     try:
-        if os.path.exists('models/model_config_complete.pkl'):
-            with open('models/model_config_complete.pkl', 'rb') as f:
+        config_path = 'models/model_config_complete.pkl'
+        if os.path.exists(config_path):
+            with open(config_path, 'rb') as f:
                 config = pickle.load(f)
                 if 'labels' in config:
                     LABELS = config['labels']
-                    print(f"✅ Labels chargés: {LABELS}")
-    except:
-        pass
+                    logger.info(f"✅ Dictionnaire de labels chargé: {LABELS}")
+    except Exception as e:
+        logger.warning(f"⚠️ Impossible de charger les labels personnalisés: {e}")
 
-def get_db_connection():
-    if db_pool:
-        try:
-            return db_pool.get_connection()
-        except Error:
-            return None
-    return None
+@contextmanager
+def get_db_cursor():
+    """Gestionnaire de contexte sécurisé pour les connexions DB"""
+    if not db_pool:
+        yield None
+        return
+    
+    conn = None
+    try:
+        conn = db_pool.get_connection()
+        cursor = conn.cursor(dictionary=True)
+        yield cursor
+        conn.commit()
+    except Error as e:
+        if conn: conn.rollback()
+        logger.error(f"❌ Erreur Database: {e}")
+        yield None
+    finally:
+        if conn:
+            conn.close()
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def preprocess_image(image_bytes):
-    img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
-    img = img.resize((224, 224))
-    img_array = np.array(img) / 255.0
-    img_array = np.expand_dims(img_array, axis=0)
-    return img_array
+    try:
+        img = Image.open(io.BytesIO(image_bytes)).convert('RGB')
+        img = img.resize((224, 224))
+        img_array = np.array(img) / 255.0
+        img_array = np.expand_dims(img_array, axis=0)
+        return img_array
+    except Exception as e:
+        logger.error(f"❌ Erreur de prétraitement image: {e}")
+        return None
 
 def predict_banknote(image_bytes):
-    if MODEL is None: return None
+    if MODEL is None:
+        return None
     
     img_array = preprocess_image(image_bytes)
-    preds = MODEL.predict(img_array, verbose=0)
+    if img_array is None: return None
     
-    # Gère les modèles à sorties multiples (auth, denom)
-    if isinstance(preds, list) and len(preds) >= 2:
-        auth_pred = preds[0]
-        denom_pred = preds[1]
-    else:
-        auth_pred = preds
-        denom_pred = np.zeros((1, 8))
+    try:
+        preds = MODEL.predict(img_array, verbose=0)
+        
+        # Support pour modèles multi-sorties ou sortie unique
+        if isinstance(preds, list) and len(preds) >= 2:
+            auth_pred = preds[0]
+            denom_pred = preds[1]
+        else:
+            auth_pred = preds
+            denom_pred = None
 
-    is_real = bool(auth_pred[0][0] > 0.5)
-    confidence = float(auth_pred[0][0] if is_real else 1 - auth_pred[0][0])
-    
-    denom_idx = int(np.argmax(denom_pred[0]))
-    denomination = LABELS.get(denom_idx, "Unknown")
-    denom_conf = float(denom_pred[0][denom_idx])
-    
-    return {
-        'is_authentic': is_real,
-        'confidence': confidence,
-        'currency': 'INR',
-        'denomination': denomination,
-        'denomination_confidence': denom_conf
-    }
+        # Logique d'authenticité (Sigmoid ou Softmax 2-classes)
+        if auth_pred.shape[1] == 1:
+            score = float(auth_pred[0][0])
+            is_real = score > 0.5
+            confidence = score if is_real else 1.0 - score
+        else:
+            idx = np.argmax(auth_pred[0])
+            is_real = idx == 1 # Supposant 1=Real, 0=Fake
+            confidence = float(auth_pred[0][idx])
+
+        # Logique de dénomination
+        denomination = "Inconnue"
+        denom_conf = 0.0
+        if denom_pred is not None:
+            denom_idx = int(np.argmax(denom_pred[0]))
+            denomination = LABELS.get(denom_idx, str(denom_idx))
+            denom_conf = float(denom_pred[0][denom_idx])
+        
+        return {
+            'is_authentic': is_real,
+            'confidence': confidence,
+            'currency': 'XOF', # Ajusté pour l'UEMOA par défaut ou selon votre besoin
+            'denomination': denomination,
+            'denomination_confidence': denom_conf
+        }
+    except Exception as e:
+        logger.error(f"❌ Erreur lors de l'inférence: {e}")
+        return None
 
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({'status': 'healthy', 'model_loaded': MODEL is not None})
+    return jsonify({
+        'status': 'online',
+        'timestamp': datetime.now().isoformat(),
+        'model_status': 'loaded' if MODEL is not None else 'not_loaded',
+        'database_status': 'connected' if db_pool else 'disconnected'
+    })
 
 @app.route('/api/detect', methods=['POST'])
 def detect():
-    if MODEL is None: return jsonify({'error': 'Modèle non chargé'}), 503
-    if 'image' not in request.files: return jsonify({'error': 'Pas d\'image'}), 400
+    if MODEL is None:
+        return jsonify({'error': 'Intelligence Artificielle non initialisée'}), 503
+    
+    if 'image' not in request.files:
+        return jsonify({'error': 'Aucun fichier image fourni'}), 400
     
     file = request.files['image']
-    start_time = time.time()
-    result = predict_banknote(file.read())
+    if file.filename == '' or not allowed_file(file.filename):
+        return jsonify({'error': 'Format de fichier non supporté'}), 400
     
-    if result:
-        result['processing_time_ms'] = (time.time() - start_time) * 1000
-        result['detection_id'] = str(uuid.uuid4())
-        result['timestamp'] = datetime.now().isoformat()
+    try:
+        start_time = time.time()
+        image_bytes = file.read()
         
-        conn = get_db_connection()
-        if conn:
-            try:
-                cursor = conn.cursor()
+        result = predict_banknote(image_bytes)
+        if not result:
+            return jsonify({'error': 'Échec de l\'analyse de l\'image'}), 500
+            
+        processing_time = (time.time() - start_time) * 1000
+        detection_id = str(uuid.uuid4())
+        
+        result.update({
+            'detection_id': detection_id,
+            'processing_time_ms': round(processing_time, 2),
+            'timestamp': datetime.now().isoformat()
+        })
+        
+        # Sauvegarde asynchrone dans la DB (via pool)
+        with get_db_cursor() as cursor:
+            if cursor:
                 cursor.execute('''
                     INSERT INTO detections 
                     (detection_id, filename, is_authentic, confidence, currency, 
                      denomination, denomination_confidence, processing_time_ms)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-                ''', (result['detection_id'], file.filename, result['is_authentic'],
+                ''', (detection_id, file.filename, result['is_authentic'],
                       result['confidence'], result['currency'], result['denomination'],
                       result['denomination_confidence'], result['processing_time_ms']))
-                conn.commit()
-                cursor.close()
-            finally:
-                conn.close()
+                logger.info(f"📊 Détection enregistrée: {detection_id} ({result['denomination']})")
+
         return jsonify(result)
-    return jsonify({'error': 'Erreur interne'}), 500
+        
+    except Exception as e:
+        logger.error(f"❌ Erreur critique /api/detect: {e}")
+        return jsonify({'error': 'Erreur interne du serveur'}), 500
 
 @app.route('/api/history', methods=['GET'])
+@app.route('/history', methods=['GET'])
 def get_history():
-    conn = get_db_connection()
-    if not conn: return jsonify([]), 500
-    try:
-        cursor = conn.cursor(dictionary=True)
+    with get_db_cursor() as cursor:
+        if cursor is None:
+            return jsonify({'error': 'Base de données inaccessible'}), 500
+        
         cursor.execute('SELECT * FROM detections ORDER BY created_at DESC LIMIT 50')
         rows = cursor.fetchall()
+        
         for r in rows:
             r['timestamp'] = r['created_at'].isoformat()
             r['is_authentic'] = bool(r['is_authentic'])
             r['confidence'] = float(r['confidence'])
             r['processing_time_ms'] = float(r['processing_time_ms'])
             if 'created_at' in r: del r['created_at']
+            
         return jsonify(rows)
-    finally:
-        conn.close()
 
 @app.route('/api/stats', methods=['GET'])
+@app.route('/stats', methods=['GET'])
 def get_stats():
-    conn = get_db_connection()
-    if not conn: return jsonify({}), 500
-    try:
-        cursor = conn.cursor(dictionary=True)
+    with get_db_cursor() as cursor:
+        if cursor is None:
+            return jsonify({'error': 'Base de données inaccessible'}), 500
+            
         cursor.execute('''
             SELECT COUNT(*) as total, 
             SUM(CASE WHEN is_authentic=1 THEN 1 ELSE 0 END) as authentic,
@@ -175,14 +262,20 @@ def get_stats():
             AVG(confidence) as avg_confidence FROM detections
         ''')
         stats = cursor.fetchone()
-        stats['total'] = int(stats['total'] or 0)
-        stats['authentic'] = int(stats['authentic'] or 0)
-        stats['fake'] = int(stats['fake'] or 0)
-        stats['avg_confidence'] = float(stats['avg_confidence'] or 0)
-        return jsonify(stats)
-    finally:
-        conn.close()
+        
+        return jsonify({
+            'total': int(stats['total'] or 0),
+            'authentic': int(stats['authentic'] or 0),
+            'fake': int(stats['fake'] or 0),
+            'avg_confidence': round(float(stats['avg_confidence'] or 0), 4)
+        })
+
+@app.errorhandler(404)
+def not_found(error):
+    return jsonify({'error': 'Endpoint non trouvé'}), 404
 
 if __name__ == '__main__':
     load_model()
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    logger.info("🚀 Lancement du serveur sécurisé Banknote AI sur le port 5000")
+    # En production, utilisez Gunicorn ou Waitress au lieu du serveur de dev Flask
+    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)

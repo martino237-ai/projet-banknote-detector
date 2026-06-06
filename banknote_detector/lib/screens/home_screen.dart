@@ -1,203 +1,293 @@
 import 'package:flutter/material.dart';
 
 class HomeScreen extends StatelessWidget {
-  const HomeScreen({super.key});
+  final VoidCallback? onStartPressed;
+
+  const HomeScreen({super.key, this.onStartPressed});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 200.0,
-            floating: false,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: const Text('Banknote AI', 
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  shadows: [Shadow(color: Colors.black45, blurRadius: 10)],
-                ),
-              ),
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Colors.blue.shade900, Colors.blue.shade500],
-                  ),
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.account_balance_wallet_rounded,
-                    size: 80,
-                    color: Colors.white24,
-                  ),
-                ),
-              ),
-            ),
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF07101F), Color(0xFF0B172F)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Bienvenue sur Banknote AI',
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue.shade900,
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -120,
+              right: -100,
+              child: _buildCircle(320, const Color(0xFF4F46E5).withOpacity(0.16)),
+            ),
+            Positioned(
+              bottom: -90,
+              left: -80,
+              child: _buildCircle(260, const Color(0xFF22C55E).withOpacity(0.10)),
+            ),
+            SafeArea(
+              child: CustomScrollView(
+                physics: const BouncingScrollPhysics(),
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 26.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 40),
+                          _buildHeroSection(context),
+                          const SizedBox(height: 44),
+                          _buildSectionHeader('Services Premium'),
+                          const SizedBox(height: 22),
+                          _buildFeatureGrid(context),
+                          const SizedBox(height: 36),
+                          _buildPromoCard(context),
+                          const SizedBox(height: 90),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'La solution intelligente pour vérifier vos billets de banque en un instant grâce à l\'intelligence artificielle.',
-                    style: TextStyle(fontSize: 16, color: Colors.black87, height: 1.5),
-                  ),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Nos Fonctionnalités'),
-                  const SizedBox(height: 20),
-                  _buildFeatureCard(
-                    context,
-                    'Détection Instantanée',
-                    'Identifiez la valeur et l\'authenticité d\'un billet en prenant simplement une photo.',
-                    Icons.camera_enhance_rounded,
-                    Colors.blue,
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    'Analyse de Sécurité',
-                    'Détectez les contrefaçons grâce à nos modèles d\'IA entraînés sur des milliers d\'échantillons.',
-                    Icons.security_rounded,
-                    Colors.green,
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    'Historique & Suivi',
-                    'Gardez une trace de toutes vos analyses passées et consultez-les à tout moment.',
-                    Icons.history_rounded,
-                    Colors.orange,
-                  ),
-                  _buildFeatureCard(
-                    context,
-                    'Statistiques Avancées',
-                    'Visualisez vos données d\'analyse sous forme de graphiques clairs et intuitifs.',
-                    Icons.bar_chart_rounded,
-                    Colors.purple,
-                  ),
-                  const SizedBox(height: 32),
-                  _buildSectionTitle('Comment ça marche ?'),
-                  const SizedBox(height: 16),
-                  _buildStep(1, 'Prenez une photo nette du billet.'),
-                  _buildStep(2, 'Attendez l\'analyse de notre IA (quelques millisecondes).'),
-                  _buildStep(3, 'Consultez les résultats détaillés et le taux de confiance.'),
-                  const SizedBox(height: 40),
                 ],
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        letterSpacing: 0.5,
-      ),
-    );
-  }
-
-  Widget _buildFeatureCard(BuildContext context, String title, String desc, IconData icon, Color color) {
+  Widget _buildCircle(double size, Color color) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
+      width: size,
+      height: size,
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: color,
+        shape: BoxShape.circle,
+      ),
+    );
+  }
+
+  Widget _buildHeroSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF4F46E5).withOpacity(0.14),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: const Text(
+            'Powered by Advanced AI',
+            style: TextStyle(
+              color: Color(0xFF4F46E5),
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+        const Text(
+          'Vérifiez vos\nBillets en un Clin d\'Œil',
+          style: TextStyle(
+            fontSize: 36,
+            fontWeight: FontWeight.w900,
+            height: 1.1,
+            color: Colors.white,
+            letterSpacing: -1,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          'Technologie de détection neuronale pour une sécurité financière instantanée, avec un design premium et une expérience fluide.',
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.white.withOpacity(0.78),
+            height: 1.6,
+          ),
+        ),
+        const SizedBox(height: 32),
+        ElevatedButton(
+          onPressed: onStartPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF4F46E5),
+            foregroundColor: Colors.white,
+            minimumSize: const Size(210, 62),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+            elevation: 10,
+            shadowColor: const Color(0xFF4F46E5).withOpacity(0.28),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Démarrer l\'Analyse', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              SizedBox(width: 10),
+              Icon(Icons.arrow_forward_rounded, size: 20),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSectionHeader(String title) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            color: Colors.white,
+          ),
+        ),
+        Icon(Icons.more_horiz, color: Colors.white.withOpacity(0.65)),
+      ],
+    );
+  }
+
+  Widget _buildFeatureGrid(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(child: _buildFeatureItem(
+              'Authenticité', 
+              'Détection de faux billets', 
+              Icons.verified_user_rounded, 
+              const Color(0xFF6366F1)
+            )),
+            const SizedBox(width: 16),
+            Expanded(child: _buildFeatureItem(
+              'Précision', 
+              'IA de dernière génération', 
+              Icons.auto_graph_rounded, 
+              const Color(0xFFEC4899)
+            )),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(child: _buildFeatureItem(
+              'Multi-Devises', 
+              'Supporte 50+ monnaies', 
+              Icons.public_rounded, 
+              const Color(0xFFF59E0B)
+            )),
+            const SizedBox(width: 16),
+            Expanded(child: _buildFeatureItem(
+              'Sécurisé', 
+              'Anonymat de vos données', 
+              Icons.lock_person_rounded, 
+              const Color(0xFF22C55E)
+            )),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildFeatureItem(String title, String subtitle, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: const Color(0xFF11203A),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.1),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: Colors.black.withOpacity(0.18),
+            blurRadius: 24,
+            offset: const Offset(0, 12),
           ),
         ],
-        border: Border.all(color: color.withOpacity(0.1), width: 1),
+        border: Border.all(color: Colors.white.withOpacity(0.07)),
       ),
-      child: Row(
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(15),
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: color, size: 28),
+            child: Icon(icon, color: color, size: 22),
           ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  desc,
-                  style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-              ],
-            ),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.white),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            subtitle,
+            style: TextStyle(color: Colors.white.withOpacity(0.68), fontSize: 12.5, height: 1.4),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStep(int number, String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12.0),
+  Widget _buildPromoCard(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4F46E5), Color(0xFF2563EB)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(26),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF2563EB).withOpacity(0.28),
+            blurRadius: 22,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
       child: Row(
         children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: Colors.blue.shade900,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: Text(
-                number.toString(),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              ),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Bénéficiez d\'un\nAudit de Sécurité',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                SizedBox(height: 8),
+                Text(
+                  'Découvrez nos solutions entreprises.',
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.14),
+              shape: BoxShape.circle,
             ),
+            child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 16),
           ),
         ],
       ),
     );
   }
 }
+
