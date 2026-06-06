@@ -161,3 +161,25 @@
 2026-06-06 15:52:34,372 [INFO] 📊 Détection enregistrée: f6ece9ba-9bc7-41a2-a07b-8dcb58319ae6 (100)
 2026-06-06 15:52:34,395 [INFO] 127.0.0.1 - - [06/Jun/2026 15:52:34] "POST /api/detect HTTP/1.1" 200 -
 2026-06-06 15:53:06,487 [INFO] 127.0.0.1 - - [06/Jun/2026 15:53:06] "GET /api/history HTTP/1.1" 200 -
+2026-06-06 23:37:01,503 [INFO] ✅ Pool de connexion MySQL initialisé
+2026-06-06 23:37:04,160 [WARNING] Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.
+2026-06-06 23:37:04,160 [INFO] ✅ Modèle TensorFlow chargé avec succès
+2026-06-06 23:37:04,160 [INFO] 🚀 Lancement du serveur sécurisé Banknote AI sur le port 5000
+2026-06-06 23:37:04,188 [INFO] [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.3.12:5000
+2026-06-06 23:37:04,188 [INFO] [33mPress CTRL+C to quit[0m
+2026-06-06 23:39:06,058 [INFO] 127.0.0.1 - - [06/Jun/2026 23:39:06] "GET /api/stats HTTP/1.1" 200 -
+2026-06-06 23:42:31,323 [INFO] 📊 Détection enregistrée: be4d1f3c-729d-4a32-add4-e75e574a446c (100)
+2026-06-06 23:42:31,335 [INFO] 127.0.0.1 - - [06/Jun/2026 23:42:31] "POST /api/detect HTTP/1.1" 200 -
+2026-06-06 23:50:01,400 [INFO] 127.0.0.1 - - [06/Jun/2026 23:50:01] "GET /api/stats HTTP/1.1" 200 -
+2026-06-06 23:55:39,065 [INFO] 📊 Détection enregistrée: 0471bad6-957f-412b-8e2a-d3774b6500f4 (100)
+2026-06-06 23:55:39,095 [INFO] 127.0.0.1 - - [06/Jun/2026 23:55:39] "POST /api/detect HTTP/1.1" 200 -
+2026-06-06 23:56:56,375 [INFO] 📊 Détection enregistrée: 985fda00-5569-4d13-947b-e5df2e8262ff (100)
+2026-06-06 23:56:56,391 [INFO] 127.0.0.1 - - [06/Jun/2026 23:56:56] "POST /api/detect HTTP/1.1" 200 -
+2026-06-07 00:02:33,789 [INFO] 127.0.0.1 - - [07/Jun/2026 00:02:33] "GET /api/stats HTTP/1.1" 200 -
+2026-06-07 00:03:51,597 [INFO] 📊 Détection enregistrée: ff643bdb-8b57-43be-9592-c7747ca3e2c4 (100)
+2026-06-07 00:03:51,621 [INFO] 127.0.0.1 - - [07/Jun/2026 00:03:51] "POST /api/detect HTTP/1.1" 200 -
+2026-06-07 00:05:17,030 [INFO] 📊 Détection enregistrée: 3242b7fb-6689-44fc-9ba2-f291fc7bfcad (100)
+2026-06-07 00:05:17,058 [INFO] 127.0.0.1 - - [07/Jun/2026 00:05:17] "POST /api/detect HTTP/1.1" 200 -

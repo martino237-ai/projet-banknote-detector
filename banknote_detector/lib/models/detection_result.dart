@@ -37,6 +37,16 @@ class DetectionResult {
     );
   }
 
+  String get displayCurrency {
+    switch (currency.toUpperCase()) {
+      case 'XOF':
+      case 'INR':
+        return 'Roupie';
+      default:
+        return currency;
+    }
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'detection_id': detectionId,

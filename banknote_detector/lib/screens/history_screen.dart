@@ -18,7 +18,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     final history = historyService.history;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF07101F),
       appBar: AppBar(
         title: const Text('Historique'),
         actions: [
@@ -51,7 +51,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
           Container(
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFF0E1A2B),
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 20),
@@ -62,13 +62,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
           const SizedBox(height: 24),
           const Text(
             'Aucun historique',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 8),
           Text(
             'Vos analyses apparaîtront ici\nune fois effectuées.',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+            style: TextStyle(color: Colors.grey.shade300, fontSize: 14),
           ),
         ],
       ),
@@ -81,8 +81,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0E1A2B),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.08)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -124,11 +125,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
-                              isAuthentic ? '${item.currency} ${item.denomination}' : 'Billet Suspect',
+                              isAuthentic ? '${item.displayCurrency} ${item.denomination}' : 'Billet Suspect',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                                 fontSize: 16,
-                                color: Color(0xFF0F172A),
+                                color: Colors.white,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -152,7 +153,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF0F172A),
+                              color: Colors.white,
                             ),
                           ),
                           Text(

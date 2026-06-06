@@ -62,26 +62,23 @@ class _DetectionScreenState extends State<DetectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color(0xFF07101F),
       appBar: AppBar(
         title: const Text('Analyse IA'),
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        child: Padding(
+      body: SafeArea(
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _buildImageCard(),
-              const SizedBox(height: 32),
-              if (!_isProcessing && _result == null) _buildInstructionText(),
-              if (_isProcessing) _buildLoadingState(),
-              if (_result != null) _buildResultSection(_result!),
-              const SizedBox(height: 32),
-              _buildActionButtons(),
-            ],
-          ),
+          children: [
+            _buildImageCard(),
+            const SizedBox(height: 32),
+            if (!_isProcessing && _result == null) _buildInstructionText(),
+            if (_isProcessing) _buildLoadingState(),
+            if (_result != null) _buildResultSection(_result!),
+            const SizedBox(height: 32),
+            _buildActionButtons(),
+          ],
         ),
       ),
     );
@@ -91,7 +88,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
     return Container(
       height: 350,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0E1A2B),
         borderRadius: BorderRadius.circular(32),
         boxShadow: [
           BoxShadow(
@@ -145,13 +142,13 @@ class _DetectionScreenState extends State<DetectionScreen> {
         const Text(
           'Prêt pour l\'authentification',
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
         ),
         const SizedBox(height: 8),
         Text(
           'Prenez une photo nette du billet pour que notre IA puisse l\'analyser précisément.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+          style: TextStyle(color: Colors.grey.shade300, fontSize: 14),
         ),
       ],
     );
@@ -177,7 +174,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: const Color(0xFF0E1A2B),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: themeColor.withOpacity(0.2), width: 2),
       ),
@@ -190,7 +187,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
             style: TextStyle(color: themeColor, fontWeight: FontWeight.w900, fontSize: 20),
           ),
           const Divider(height: 32),
-          _buildResultRow('Valeur', '${result.currency} ${result.denomination}'),
+          _buildResultRow('Valeur', '${result.displayCurrency} ${result.denomination}'),
           _buildResultRow('Confiance', '${(result.confidence * 100).toStringAsFixed(1)}%'),
           const SizedBox(height: 16),
           ClipRRect(
